@@ -8,10 +8,10 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 
-public class JSONHelper {
+class JSONHelper {
 
-    public static ArrayList getListData(JSONArray arrJson) {
-        ArrayList jsonData = new ArrayList();
+    static ArrayList getListData(JSONArray arrJson) {
+        ArrayList<String> jsonData = new ArrayList<>();
 
         if (arrJson != null) {
             String s;
@@ -29,7 +29,7 @@ public class JSONHelper {
         return jsonData;
     }
 
-    public static String capitalize(String str) {
+    private static String capitalize(String str) {
         if(str== null || str.isEmpty()) {
             return str;
         }

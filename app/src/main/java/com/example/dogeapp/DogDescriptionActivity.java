@@ -2,7 +2,9 @@ package com.example.dogeapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,10 +28,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-import static com.example.dogeapp.MainActivity.url;
-
 public class DogDescriptionActivity extends AppCompatActivity {
-    private TextView textView;
     private ImageView imageView;
     private ListView list;
 
@@ -37,7 +36,7 @@ public class DogDescriptionActivity extends AppCompatActivity {
     private String subBreedUrl = "";
 
     private RequestQueue requestQueue;
-    private ArrayList<String> listaCachorros = new ArrayList<String>();
+    private ArrayList<String> listaCachorros = new ArrayList<>();
 
     private String breedName;
     private String subBreedName;
@@ -48,7 +47,7 @@ public class DogDescriptionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dog_description);
 
-        textView = findViewById(R.id.textView);
+        TextView textView = findViewById(R.id.textView);
         imageView = findViewById(R.id.imageView);
         list = findViewById(R.id.list);
 
@@ -67,7 +66,7 @@ public class DogDescriptionActivity extends AppCompatActivity {
         requestQueue = Volley.newRequestQueue(this);
         setUrls();
 
-        loadImageFromJSON();
+        loadImageFromJSON(imageUrl);
 
         if(isSubBreed) {
             textView.setText(subBreedName);
@@ -78,7 +77,7 @@ public class DogDescriptionActivity extends AppCompatActivity {
     }
 
     protected void setListData(ArrayList<String> lista){
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, lista);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lista);
         list.setAdapter(arrayAdapter);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -116,13 +115,15 @@ public class DogDescriptionActivity extends AppCompatActivity {
         }
     }
 
-    private void loadImageFromJSON(){
+    private void loadImageFromJSON(String imageUrl){
         JsonObjectRequest imageBreedRequest = new JsonObjectRequest
                 (Request.Method.GET, imageUrl, null, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            setImageView(response.getString("message"));
+                            String url = response.getString("message");
+                            setImageView(url, imageView);
+                            setImageUrlInPreferences(url);
                         } catch (JSONException e) {
                             Log.e("JSONRequest", "Unexpected JSON exception", e);
                         }
@@ -138,8 +139,8 @@ public class DogDescriptionActivity extends AppCompatActivity {
         requestQueue.add(imageBreedRequest);
     }
 
-    protected void setImageView(String url){
-        Picasso.get().load(url).into(imageView);
+    protected void setImageView(String url, ImageView imageView) {
+        Picasso.get().load(url).resize(225, 225).into(imageView);
     }
 
     private void loadSubBreedList(){
@@ -165,5 +166,15 @@ public class DogDescriptionActivity extends AppCompatActivity {
                     });
 
             requestQueue.add(dogSubBreedsArrayRequest);
+    }
+
+    private void setImageUrlInPreferences(String imageUrl){
+        SharedPreferences sharedPref = getSharedPreferences(
+                getString(R.string.last_image_preference), Context.MODE_PRIVATE);
+
+        // Writing data to SharedPreferences
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(MainActivity.LAST_IMAGE_URL, imageUrl);
+        editor.apply();
     }
 }
