@@ -1,17 +1,15 @@
 package com.example.dogeapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -33,19 +31,22 @@ public class MainActivity extends AppCompatActivity {
     public static final int SHOW_SUB_BREED_DETAILS = 654;
     public static String LAST_IMAGE_URL = "com.example.dogeapp.LAST_IMAGE_URL";
 
-    private ListView list;
+    private RecyclerView rv;
+    private BreedAdapter adapter;
     private ImageView imageMain;
 
     private RequestQueue queue;
-    private ArrayList<String> listaCachorros = new ArrayList<>();
+    private ArrayList<Breed> breedList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        list = findViewById(R.id.list);
+        rv = findViewById(R.id.rv);
         imageMain = findViewById(R.id.imageMain);
+
+        setRecyclerView();
 
         //Criamos a request queue
         queue = Volley.newRequestQueue(this);
@@ -56,8 +57,13 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            listaCachorros = JSONHelper.getListData(response.getJSONArray("message"));
-                            setListData(listaCachorros);
+                            ArrayList breedNameList = JSONHelper.getListData(response.getJSONArray("message"));
+
+                            breedList.clear();
+
+                            breedList.addAll(Breed.generateBreedListFromNames(breedNameList));
+
+                            adapter.notifyDataSetChanged();
                         } catch (JSONException e) {
                             Log.e("JSONRequest", "Unexpected JSON exception", e);
                         }
@@ -91,19 +97,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void setListData(ArrayList<String> lista){
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lista);
-        list.setAdapter(arrayAdapter);
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String dogName = (String) list.getItemAtPosition(position);
+    protected void setRecyclerView(){
+        RecyclerView.LayoutManager lm = new LinearLayoutManager(this);
+        rv.setLayoutManager(lm);
 
-                dogName = dogName.toLowerCase();
+        adapter = new BreedAdapter(breedList);
+
+        adapter.setOnItemClickListener(new ItemClickListener() {
+
+            @Override
+            public void onItemClick(int position) {
+                String dogName = breedList.get(position).getBreedName();
 
                 showBreedDetails(dogName);
             }
+
+            @Override
+            public void onFavoriteClick(int position) {
+                Toast.makeText(MainActivity.this, "Favoritado!", Toast.LENGTH_SHORT).show();
+            }
         });
+
+        rv.setAdapter(adapter);
     }
 
     private void showBreedDetails(String dogName){

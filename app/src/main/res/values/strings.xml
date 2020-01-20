@@ -3,4 +3,5 @@
     <string name="last_image_preference">com.example.dogeapp.LAST_IMAGE_PREFERENCE</string>
     <string name="description_dog_image">Imagem da raça</string>
     <string name="dog_breed_placeholder">Doggo!</string>
+    <string name="name">Nome</string>
 </resources>

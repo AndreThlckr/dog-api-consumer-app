@@ -1,17 +1,15 @@
 package com.example.dogeapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,14 +28,14 @@ import java.util.ArrayList;
 
 public class DogDescriptionActivity extends AppCompatActivity {
     private ImageView imageView;
-    private ListView list;
+    private RecyclerView rv;
+
+    private BreedAdapter adapter;
+    private RequestQueue requestQueue;
+    private ArrayList<Breed> listaCachorros = new ArrayList<>();
 
     private String imageUrl;
     private String subBreedUrl = "";
-
-    private RequestQueue requestQueue;
-    private ArrayList<String> listaCachorros = new ArrayList<>();
-
     private String breedName;
     private String subBreedName;
     private boolean isSubBreed = false;
@@ -49,7 +47,7 @@ public class DogDescriptionActivity extends AppCompatActivity {
 
         TextView textView = findViewById(R.id.textView);
         imageView = findViewById(R.id.imageView);
-        list = findViewById(R.id.list);
+        rv = findViewById(R.id.rv);
 
         Intent intent = getIntent();
         breedName = intent.getStringExtra("breedName");
@@ -72,21 +70,30 @@ public class DogDescriptionActivity extends AppCompatActivity {
             textView.setText(subBreedName);
         } else {
             textView.setText(breedName);
+            setRecyclerView();
             loadSubBreedList();
         }
     }
 
-    protected void setListData(ArrayList<String> lista){
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lista);
-        list.setAdapter(arrayAdapter);
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+    protected void setRecyclerView(){
+        RecyclerView.LayoutManager lm = new LinearLayoutManager(this);
+        rv.setLayoutManager(lm);
+
+        adapter = new BreedAdapter(listaCachorros);
+        rv.setAdapter(adapter);
+
+        adapter.setOnItemClickListener(new ItemClickListener() {
+
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String subBreed = (String) list.getItemAtPosition(position);
+            public void onItemClick(int position) {
+                String dogName = listaCachorros.get(position).getBreedName();
 
-                subBreed = subBreed.substring(0, 1).toLowerCase() + subBreed.substring(1);
+                showSubBreedDetails(dogName);
+            }
 
-                showSubBreedDetails(subBreed);
+            @Override
+            public void onFavoriteClick(int position) {
+                Toast.makeText(DogDescriptionActivity.this, "Favoritado!", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -150,8 +157,13 @@ public class DogDescriptionActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(JSONObject response) {
                             try {
-                                listaCachorros = JSONHelper.getListData(response.getJSONArray("message"));
-                                setListData(listaCachorros);
+                                ArrayList subBreedNameList = JSONHelper.getListData(response.getJSONArray("message"));
+
+                                listaCachorros.clear();
+
+                                listaCachorros.addAll(Breed.generateBreedListFromNames(subBreedNameList));
+
+                                adapter.notifyDataSetChanged();
                             } catch (JSONException e) {
                                 Log.e("JSONRequest", "Unexpected JSON exception", e);
                             }
